@@ -1,3 +1,4 @@
+import { LogoutButton } from "@/components/logout-button";
 import {
   Card,
   CardContent,
@@ -18,11 +19,12 @@ export default function Page() {
               </CardTitle>
               <CardDescription>Check your email to confirm</CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-4">
               <p className="text-sm text-muted-foreground">
                 You&apos;ve successfully signed up. Please check your email to
                 confirm your account before signing in.
               </p>
+              <LogoutButton />
             </CardContent>
           </Card>
         </div>
