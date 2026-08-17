@@ -5,7 +5,6 @@ import { Hero } from "@/components/hero";
 import { ThemeSwitcher } from "@/components/theme-switcher";
 import { ConnectSupabaseSteps } from "@/components/tutorial/connect-supabase-steps";
 import { SignUpUserSteps } from "@/components/tutorial/sign-up-user-steps";
-import DeviceDashboard from "@/components/device-dashboard"; // ADDED
 import { hasEnvVars } from "@/lib/utils";
 import Link from "next/link";
 import { Suspense } from "react";
@@ -38,10 +37,6 @@ export default function Home() {
             {hasEnvVars ? <SignUpUserSteps /> : <ConnectSupabaseSteps />}
           </main>
         </div>
-
-        {/* ADDED: live device status dashboard */}
-        {hasEnvVars && <DeviceDashboard />}
-
       </div>
     </main>
   );
