@@ -37,6 +37,7 @@ export default function Home() {
             {hasEnvVars ? <SignUpUserSteps /> : <ConnectSupabaseSteps />}
           </main>
         </div>
+
       </div>
     </main>
   );
