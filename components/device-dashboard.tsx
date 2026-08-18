@@ -24,24 +24,94 @@ type NodeDef = {
 };
 
 const MOTOR_NODES: NodeDef[] = [
-  { table: "motor_status", logTable: "motor_status_logs", column: "pump_on", label: "Motor Pump", group: "Motor Status" },
-  { table: "motor_status", logTable: "motor_status_logs", column: "door1_open", label: "Door 1", group: "Motor Status" },
-  { table: "motor_status", logTable: "motor_status_logs", column: "door2_open", label: "Door 2", group: "Motor Status" },
-  { table: "motor_status", logTable: "motor_status_logs", column: "door3_open", label: "Door 3", group: "Motor Status" },
-  { table: "motor_status", logTable: "motor_status_logs", column: "node2_open", label: "Bathroom1", group: "Nodes", everSeenColumn: "node2_ever_seen" },
-  { table: "motor_status", logTable: "motor_status_logs", column: "node3_open", label: "Washing area", group: "Nodes", everSeenColumn: "node3_ever_seen" },
-  { table: "motor_status", logTable: "motor_status_logs", column: "node4_open", label: "Bathroom2", group: "Nodes", everSeenColumn: "node4_ever_seen" },
+  {
+    table: "motor_status",
+    logTable: "motor_status_logs",
+    column: "pump_on",
+    label: "Motor Pump",
+    group: "Motor Status",
+  },
+  {
+    table: "motor_status",
+    logTable: "motor_status_logs",
+    column: "door1_open",
+    label: "Door 1",
+    group: "Motor Status",
+  },
+  {
+    table: "motor_status",
+    logTable: "motor_status_logs",
+    column: "door2_open",
+    label: "Door 2",
+    group: "Motor Status",
+  },
+  {
+    table: "motor_status",
+    logTable: "motor_status_logs",
+    column: "door3_open",
+    label: "Door 3",
+    group: "Motor Status",
+  },
+  {
+    table: "motor_status",
+    logTable: "motor_status_logs",
+    column: "node2_open",
+    label: "Bathroom1",
+    group: "Nodes",
+    everSeenColumn: "node2_ever_seen",
+  },
+  {
+    table: "motor_status",
+    logTable: "motor_status_logs",
+    column: "node3_open",
+    label: "Washing area",
+    group: "Nodes",
+    everSeenColumn: "node3_ever_seen",
+  },
+  {
+    table: "motor_status",
+    logTable: "motor_status_logs",
+    column: "node4_open",
+    label: "Bathroom2",
+    group: "Nodes",
+    everSeenColumn: "node4_ever_seen",
+  },
 ];
 
 const TANK_NODES: NodeDef[] = [
-  { table: "tank_pump_status", logTable: "tank_pump_status_log", column: "pump2", label: "Tank Pump (Buzzer)", group: "Tank Pump Status" },
-  { table: "tank_pump_status", logTable: "tank_pump_status_log", column: "node1_valve", label: "Solenoid Valve", group: "Tank Pump Status" },
-  { table: "tank_pump_status", logTable: "tank_pump_status_log", column: "node1", label: "Node 1 (Solenoid Tank)", group: "Tank Pump Status" },
-  { table: "tank_pump_status", logTable: "tank_pump_status_log", column: "node5", label: "Node 5 (Main Tank)", group: "Tank Pump Status" },
+  {
+    table: "tank_pump_status",
+    logTable: "tank_pump_status_log",
+    column: "pump2",
+    label: "Tank Pump (Buzzer)",
+    group: "Tank Pump Status",
+  },
+  {
+    table: "tank_pump_status",
+    logTable: "tank_pump_status_log",
+    column: "node1_valve",
+    label: "Solenoid Valve",
+    group: "Tank Pump Status",
+  },
+  {
+    table: "tank_pump_status",
+    logTable: "tank_pump_status_log",
+    column: "node1",
+    label: "Node 1 (Solenoid Tank)",
+    group: "Tank Pump Status",
+  },
+  {
+    table: "tank_pump_status",
+    logTable: "tank_pump_status_log",
+    column: "node5",
+    label: "Node 5 (Main Tank)",
+    group: "Tank Pump Status",
+  },
 ];
 
 const ALL_NODES = [...MOTOR_NODES, ...TANK_NODES];
 const REFRESH_MS = 5000;
+const STALE_MS = 2 * 60 * 1000;
 
 function isOn(v: string | number | null | undefined) {
   return v === 1 || v === "1";
@@ -62,7 +132,11 @@ function StatusDot({ on }: { on: boolean }) {
   );
 }
 
-function PowerDot({ everSeen }: { everSeen: string | number | null | undefined }) {
+function PowerDot({
+  everSeen,
+}: {
+  everSeen: string | number | null | undefined;
+}) {
   const seen = everSeen === 1 || everSeen === "1";
   return (
     <span
@@ -106,7 +180,9 @@ function NodeCard({
       }`}
     >
       <div className="flex items-center justify-between mb-2">
-        <span className="text-sm font-medium text-foreground/90">{def.label}</span>
+        <span className="text-[15px] font-medium text-foreground/90">
+          {def.label}
+        </span>
         <span className="flex items-center gap-1.5">
           {def.everSeenColumn ? (
             <PowerDot everSeen={everSeenValue} />
@@ -122,12 +198,17 @@ function NodeCard({
         {on ? "ON" : "OFF"}
       </Badge>
       <div className="mt-3 text-xs text-muted-foreground space-y-0.5">
-        <div className="font-medium text-foreground/70">
+        <div className="text-[15px] text-foreground/70">
           {on ? "Running for" : "Motor Duration (last run)"}
         </div>
-        <div className="text-sm font-mono">
+        <div className="text-[15px] text-foreground/70">
           {latest ? formatDuration(latest.durationMs) : "—"}
         </div>
+        {!on && latest && (
+          <div className="text-[15px] text-foreground/70">
+            Last OFF: {formatTime(latest.offAt)}
+          </div>
+        )}
       </div>
     </button>
   );
@@ -155,7 +236,8 @@ function HistoryTable({
         <CardTitle className="text-base flex items-center gap-2">
           {def.label}
           <span className="text-xs font-normal text-muted-foreground">
-            — last {cycles.length} on/off {cycles.length === 1 ? "cycle" : "cycles"} (most recent first)
+            — last {cycles.length} on/off{" "}
+            {cycles.length === 1 ? "cycle" : "cycles"} (most recent first)
           </span>
         </CardTitle>
       </CardHeader>
@@ -189,7 +271,9 @@ function HistoryTable({
                         </Badge>
                       )}
                     </td>
-                    <td className="py-2 pr-4 font-mono">{formatDuration(c.durationMs)}</td>
+                    <td className="py-2 pr-4 font-mono">
+                      {formatDuration(c.durationMs)}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -204,9 +288,11 @@ function HistoryTable({
 function SummaryCard({
   title,
   row,
+  live,
 }: {
   title: string;
   row: MotorStatusRow | TankStatusRow | null;
+  live: boolean;
 }) {
   return (
     <Card>
@@ -214,14 +300,17 @@ function SummaryCard({
         <CardTitle className="text-lg flex items-center justify-between">
           {title}
           <span
-            className={`h-2 w-2 rounded-full ${row ? "bg-green-500" : "bg-zinc-400"}`}
+            title={live ? "Packets updating" : "No new packets for 2+ min"}
+            className={`h-2 w-2 rounded-full ${live ? "bg-green-500" : "bg-red-500"}`}
           />
         </CardTitle>
       </CardHeader>
-      <CardContent className="pt-0 text-xs text-muted-foreground flex flex-wrap gap-x-4 gap-y-1">
+      <CardContent className="text-[15px] text-foreground/70 flex flex-wrap gap-x-4 gap-y-1">
         <span>Device: {row?.device_id ?? "—"}</span>
         <span>Packets: {row?.packet_count ?? "—"}</span>
-        <span>Updated: {row?.updated_at ? formatTime(String(row.updated_at)) : "—"}</span>
+        <span>
+          Updated: {row?.updated_at ? formatTime(String(row.updated_at)) : "—"}
+        </span>
       </CardContent>
     </Card>
   );
@@ -237,6 +326,7 @@ export default function DeviceDashboard() {
   const [now, setNow] = useState(Date.now());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
 
   const fetchAll = useCallback(async () => {
     try {
@@ -260,11 +350,16 @@ export default function DeviceDashboard() {
       if (motorLogRes.error) throw motorLogRes.error;
       if (tankLogRes.error) throw tankLogRes.error;
 
-      setMotorRow(motorRes.data as MotorStatusRow | null);
-      setTankRow(tankRes.data as TankStatusRow | null);
+      const motorData = motorRes.data as MotorStatusRow | null;
+      const tankData = tankRes.data as TankStatusRow | null;
+
+      setMotorRow(motorData);
+      setTankRow(tankData);
       setMotorLogs((motorLogRes.data as StatusLogRow[]) ?? []);
       setTankLogs((tankLogRes.data as StatusLogRow[]) ?? []);
       setError(null);
+
+ 
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load status data");
     } finally {
@@ -283,10 +378,22 @@ export default function DeviceDashboard() {
   }, [fetchAll]);
 
   const valueFor = (def: NodeDef) =>
-    def.table === "motor_status" ? motorRow?.[def.column] ?? null : tankRow?.[def.column] ?? null;
+    def.table === "motor_status"
+      ? (motorRow?.[def.column] ?? null)
+      : (tankRow?.[def.column] ?? null);
 
   const logsFor = (def: NodeDef) =>
     def.logTable === "motor_status_logs" ? motorLogs : tankLogs;
+
+  const motorUpdatedAt = motorRow?.updated_at
+    ? new Date(String(motorRow.updated_at)).getTime()
+    : null;
+  const tankUpdatedAt = tankRow?.updated_at
+    ? new Date(String(tankRow.updated_at)).getTime()
+    : null;
+
+  const motorLive = motorUpdatedAt !== null && now - motorUpdatedAt < STALE_MS;
+  const tankLive = tankUpdatedAt !== null && now - tankUpdatedAt < STALE_MS;
 
   if (loading) {
     return (
@@ -306,8 +413,8 @@ export default function DeviceDashboard() {
 
   const groups = Array.from(new Set(ALL_NODES.map((n) => n.group)));
 
-  return (
-    <div className="w-full max-w-5xl flex flex-col gap-8 px-4">
+ return (
+    <div className="w-full max-w-7xl flex flex-col gap-8 px-4">
       <div className="flex items-center justify-between">
         <h2 className="font-medium text-xl">Live Device Status</h2>
         <span className="text-xs text-muted-foreground">
@@ -315,35 +422,62 @@ export default function DeviceDashboard() {
         </span>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <SummaryCard title="Motor Status" row={motorRow} />
-        <SummaryCard title="Tank Pump Status" row={tankRow} />
+      <div className="flex gap-6 items-start">
+        {/* LEFT: cards */}
+        <div className="flex-1 min-w-0 flex flex-col gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <SummaryCard title="Motor Status" row={motorRow} live={motorLive} />
+            <SummaryCard title="Tank Pump Status" row={tankRow} live={tankLive} />
+          </div>
+
+          {groups.map((group) => (
+            <div key={group} className="flex flex-col gap-3">
+              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+                {group}
+              </h3>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                {ALL_NODES.filter((n) => n.group === group).map((def) => (
+                  <NodeCard
+                    key={def.column}
+                    def={def}
+                    currentValue={valueFor(def)}
+                    everSeenValue={
+                      def.everSeenColumn
+                        ? (motorRow?.[def.everSeenColumn] ?? null)
+                        : null
+                    }
+                    logs={logsFor(def)}
+                    now={now}
+                    selected={selected?.column === def.column}
+                    onSelect={() =>
+                      setSelected(selected?.column === def.column ? null : def)
+                    }
+                  />
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* RIGHT: sticky logs panel, shows only on large screens */}
+        {selected && (
+          <div className="hidden lg:block w-[380px] shrink-0 sticky top-4 self-start max-h-[calc(100vh-2rem)] overflow-y-auto">
+            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-2">
+              History
+            </h3>
+            <HistoryTable
+              def={selected}
+              currentValue={valueFor(selected)}
+              logs={logsFor(selected)}
+              now={now}
+            />
+          </div>
+        )}
       </div>
 
-      {groups.map((group) => (
-        <div key={group} className="flex flex-col gap-3">
-          <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-            {group}
-          </h3>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-            {ALL_NODES.filter((n) => n.group === group).map((def) => (
-              <NodeCard
-                key={def.column}
-                def={def}
-                currentValue={valueFor(def)}
-                everSeenValue={def.everSeenColumn ? motorRow?.[def.everSeenColumn] ?? null : null}
-                logs={logsFor(def)}
-                now={now}
-                selected={selected?.column === def.column}
-                onSelect={() => setSelected(selected?.column === def.column ? null : def)}
-              />
-            ))}
-          </div>
-        </div>
-      ))}
-
+      {/* Fallback for small screens: still shows below since there's no room beside cards */}
       {selected && (
-        <div className="flex flex-col gap-2">
+        <div className="lg:hidden flex flex-col gap-2">
           <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
             History
           </h3>
