@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, useCallback } from "react";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -14,7 +15,7 @@ import {
 type MotorStatusRow = Record<string, string | number | null>;
 type TankStatusRow = Record<string, string | number | null>;
 
-type NodeDef = {
+export type NodeDef = {
   table: "motor_status" | "tank_pump_status";
   logTable: "motor_status_logs" | "tank_pump_status_log";
   column: string;
@@ -28,28 +29,28 @@ const MOTOR_NODES: NodeDef[] = [
     table: "motor_status",
     logTable: "motor_status_logs",
     column: "pump_on",
-    label: "Motor Pump",
+    label: "Under-Tank Pump",
     group: "Motor Status",
   },
   {
     table: "motor_status",
     logTable: "motor_status_logs",
     column: "door1_open",
-    label: "Door 1",
+    label: "Manual Valve 1",
     group: "Motor Status",
   },
   {
     table: "motor_status",
     logTable: "motor_status_logs",
     column: "door2_open",
-    label: "Door 2",
+    label: "Manual Valve 2",
     group: "Motor Status",
   },
   {
     table: "motor_status",
     logTable: "motor_status_logs",
     column: "door3_open",
-    label: "Door 3",
+    label: "Manual Valve 3",
     group: "Motor Status",
   },
   {
@@ -83,7 +84,7 @@ const TANK_NODES: NodeDef[] = [
     table: "tank_pump_status",
     logTable: "tank_pump_status_log",
     column: "pump2",
-    label: "Tank Pump (Buzzer)",
+    label: "Bore-Well Pump",
     group: "Tank Pump Status",
   },
   {
@@ -109,7 +110,7 @@ const TANK_NODES: NodeDef[] = [
   },
 ];
 
-const ALL_NODES = [...MOTOR_NODES, ...TANK_NODES];
+export const ALL_NODES = [...MOTOR_NODES, ...TANK_NODES];
 const REFRESH_MS = 5000;
 const STALE_MS = 2 * 60 * 1000;
 
@@ -152,16 +153,12 @@ function NodeCard({
   everSeenValue,
   logs,
   now,
-  selected,
-  onSelect,
 }: {
   def: NodeDef;
   currentValue: string | number | null;
   everSeenValue: string | number | null;
   logs: StatusLogRow[];
   now: number;
-  selected: boolean;
-  onSelect: () => void;
 }) {
   const on = isOn(currentValue);
   const cycles = useMemo(
@@ -171,15 +168,11 @@ function NodeCard({
   const latest = cycles[0];
 
   return (
-    <button
-      onClick={onSelect}
-      className={`relative text-left rounded-xl border p-4 transition-all bg-card hover:shadow-md hover:-translate-y-0.5 ${
-        selected
-          ? "border-primary ring-2 ring-primary/40 shadow-md"
-          : "border-border"
-      }`}
+    <Link
+      href={`/protected/history?node=${encodeURIComponent(def.column)}`}
+      className="relative text-left rounded-xl border border-border p-4 transition-all bg-card hover:shadow-md hover:-translate-y-0.5"
     >
-      <div className="flex items-center justify-between mb-2">
+      <div className="flex items-start justify-start gap-2 mb-2">
         <span className="text-[15px] font-medium text-foreground/90">
           {def.label}
         </span>
@@ -198,23 +191,22 @@ function NodeCard({
         {on ? "ON" : "OFF"}
       </Badge>
       <div className="mt-3 text-xs text-muted-foreground space-y-0.5">
-        <div className="text-[15px] text-foreground/70">
-          {on ? "Running for" : "Motor Duration (last run)"}
+        <div className="flex items-center justify-between gap-3 text-[15px] text-foreground/70">
+          <span>{on ? "Running for" : "Duration :"}</span>
+          <span>{latest ? formatDuration(latest.durationMs) : "—"}</span>
         </div>
-        <div className="text-[15px] text-foreground/70">
-          {latest ? formatDuration(latest.durationMs) : "—"}
-        </div>
+        <br />
         {!on && latest && (
           <div className="text-[15px] text-foreground/70">
             Last OFF: {formatTime(latest.offAt)}
           </div>
         )}
       </div>
-    </button>
+    </Link>
   );
 }
 
-function HistoryTable({
+export function HistoryTable({
   def,
   currentValue,
   logs,
@@ -297,7 +289,7 @@ function SummaryCard({
   return (
     <Card>
       <CardHeader className="pb-2">
-        <CardTitle className="text-lg flex items-center justify-between">
+        <CardTitle className="text-lg flex items-start justify-start gap-2">
           {title}
           <span
             title={live ? "Packets updating" : "No new packets for 2+ min"}
@@ -306,8 +298,6 @@ function SummaryCard({
         </CardTitle>
       </CardHeader>
       <CardContent className="text-[15px] text-foreground/70 flex flex-wrap gap-x-4 gap-y-1">
-        <span>Device: {row?.device_id ?? "—"}</span>
-        <span>Packets: {row?.packet_count ?? "—"}</span>
         <span>
           Updated: {row?.updated_at ? formatTime(String(row.updated_at)) : "—"}
         </span>
@@ -322,7 +312,6 @@ export default function DeviceDashboard() {
   const [tankRow, setTankRow] = useState<TankStatusRow | null>(null);
   const [motorLogs, setMotorLogs] = useState<StatusLogRow[]>([]);
   const [tankLogs, setTankLogs] = useState<StatusLogRow[]>([]);
-  const [selected, setSelected] = useState<NodeDef | null>(null);
   const [now, setNow] = useState(Date.now());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -426,8 +415,8 @@ export default function DeviceDashboard() {
         {/* LEFT: cards */}
         <div className="flex-1 min-w-0 flex flex-col gap-8">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <SummaryCard title="Motor Status" row={motorRow} live={motorLive} />
-            <SummaryCard title="Tank Pump Status" row={tankRow} live={tankLive} />
+            <SummaryCard title="Under-Tank Pump" row={motorRow} live={motorLive} />
+            <SummaryCard title="Bore-Well Pump" row={tankRow} live={tankLive} />
           </div>
 
           {groups.map((group) => (
@@ -448,10 +437,6 @@ export default function DeviceDashboard() {
                     }
                     logs={logsFor(def)}
                     now={now}
-                    selected={selected?.column === def.column}
-                    onSelect={() =>
-                      setSelected(selected?.column === def.column ? null : def)
-                    }
                   />
                 ))}
               </div>
@@ -459,36 +444,7 @@ export default function DeviceDashboard() {
           ))}
         </div>
 
-        {/* RIGHT: sticky logs panel, shows only on large screens */}
-        {selected && (
-          <div className="hidden lg:block w-[380px] shrink-0 sticky top-4 self-start max-h-[calc(100vh-2rem)] overflow-y-auto">
-            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-2">
-              History
-            </h3>
-            <HistoryTable
-              def={selected}
-              currentValue={valueFor(selected)}
-              logs={logsFor(selected)}
-              now={now}
-            />
-          </div>
-        )}
       </div>
-
-      {/* Fallback for small screens: still shows below since there's no room beside cards */}
-      {selected && (
-        <div className="lg:hidden flex flex-col gap-2">
-          <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-            History
-          </h3>
-          <HistoryTable
-            def={selected}
-            currentValue={valueFor(selected)}
-            logs={logsFor(selected)}
-            now={now}
-          />
-        </div>
-      )}
     </div>
   );
 }
