@@ -37,21 +37,21 @@ const MOTOR_NODES: NodeDef[] = [
     logTable: "motor_status_logs",
     column: "door1_open",
     label: "Manual Valve 1",
-    group: "Motor Status",
+    group: "Manual Valves",
   },
   {
     table: "motor_status",
     logTable: "motor_status_logs",
     column: "door2_open",
     label: "Manual Valve 2",
-    group: "Motor Status",
+    group: "Manual Valves",
   },
   {
     table: "motor_status",
     logTable: "motor_status_logs",
     column: "door3_open",
     label: "Manual Valve 3",
-    group: "Motor Status",
+    group: "Manual Valves",
   },
   {
     table: "motor_status",
@@ -299,7 +299,7 @@ function SummaryCard({
       </CardHeader>
       <CardContent className="text-[15px] text-foreground/70 flex flex-wrap gap-x-4 gap-y-1">
         <span>
-          Updated: {row?.updated_at ? formatTime(String(row.updated_at)) : "—"}
+          {row?.updated_at ? formatTime(String(row.updated_at)) : "—"}
         </span>
       </CardContent>
     </Card>
@@ -400,7 +400,11 @@ export default function DeviceDashboard() {
     );
   }
 
-  const groups = Array.from(new Set(ALL_NODES.map((n) => n.group)));
+  const groups = Array.from(new Set(ALL_NODES.map((n) => n.group))).sort((a, b) => {
+    if (a === "Manual Valves") return 1;
+    if (b === "Manual Valves") return -1;
+    return a.localeCompare(b);
+  });
 
  return (
     <div className="w-full max-w-7xl flex flex-col gap-8 px-4">
@@ -414,7 +418,7 @@ export default function DeviceDashboard() {
       <div className="flex gap-6 items-start">
         {/* LEFT: cards */}
         <div className="flex-1 min-w-0 flex flex-col gap-8">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-4">
             <SummaryCard title="Under-Tank Pump" row={motorRow} live={motorLive} />
             <SummaryCard title="Bore-Well Pump" row={tankRow} live={tankLive} />
           </div>
@@ -424,7 +428,13 @@ export default function DeviceDashboard() {
               <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
                 {group}
               </h3>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              <div
+                className={
+                  group === "Manual Valves"
+                    ? "grid grid-cols-1 sm:grid-cols-3 gap-3"
+                    : "grid grid-cols-2 sm:grid-cols-4 gap-4"
+                }
+              >
                 {ALL_NODES.filter((n) => n.group === group).map((def) => (
                   <NodeCard
                     key={def.column}

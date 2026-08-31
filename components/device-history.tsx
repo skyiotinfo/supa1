@@ -32,16 +32,21 @@ export default function DeviceHistory({ node }: { node: string }) {
   const chartData = cycles
     .slice(0, 10)
     .reverse()
-    .map((cycle) => ({
-      turnedOn: new Date(cycle.onAt).toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: false,
-      }),
-      duration: Number((cycle.durationMs / 60000).toFixed(2)),
-      durationLabel: formatDuration(cycle.durationMs),
-      started: formatTime(cycle.onAt),
-    }));
+    .map((cycle) => {
+      const startedAt = new Date(cycle.onAt);
+      return {
+        turnedOn: startedAt.toLocaleString([], {
+          month: "short",
+          day: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: false,
+        }),
+        duration: Number((cycle.durationMs / 60000).toFixed(2)),
+        durationLabel: formatDuration(cycle.durationMs),
+        started: formatTime(cycle.onAt),
+      };
+    });
 
   useEffect(() => {
     if (!def) {
@@ -124,13 +129,31 @@ export default function DeviceHistory({ node }: { node: string }) {
           ) : (
             <div className="h-[320px] w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartData} margin={{ top: 8, right: 8, left: 8, bottom: 8 }}>
+                <BarChart data={chartData} margin={{ top: 30, right: 2, left: 2, bottom: 60 }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} />
                   <XAxis
                     dataKey="turnedOn"
+                    type="category"
+                    angle={-90}
+                    textAnchor="end"
+                    interval={0}
+                    tick={{ fontSize: 14 }}
+                    height={120}
                   />
-                  <YAxis />
-                  <Bar dataKey="duration" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                  <YAxis hide domain={[0, "dataMax + 5"]} />
+                  <Bar
+                    dataKey="duration"
+                    fill="hsl(var(--primary))"
+                    radius={[4, 4, 0, 0]}
+                    isAnimationActive={false}
+                    label={{
+                      position: "top",
+                      formatter: (value) => `${Math.round(Number(value ?? 0))}`,
+                      fill: "hsl(var(--foreground))",
+                      fontSize: 14,
+                      style: { animation: "none" },
+                    }}
+                  />
                 </BarChart>
               </ResponsiveContainer>
             </div>
