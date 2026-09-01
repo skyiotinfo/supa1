@@ -6,6 +6,7 @@ import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxi
 import { Button } from "@/components/ui/button";
 import {
   ALL_NODES,
+  CARD_BG_CLASS,
   HistoryTable,
   type NodeDef,
 } from "@/components/device-dashboard";
@@ -120,7 +121,7 @@ export default function DeviceHistory({ node }: { node: string }) {
       {view === "table" ? (
         <HistoryTable def={def} currentValue={currentValue} logs={logs} now={now} />
       ) : (
-        <div className="rounded-xl border border-border bg-card p-4">
+        <div className={`rounded-xl border border-border p-4 ${CARD_BG_CLASS}`}>
           <h3 className="mb-4 text-base font-medium">Cycle duration</h3>
           {chartData.length === 0 ? (
             <p className="py-12 text-center text-sm text-muted-foreground">

@@ -57,7 +57,7 @@ const MOTOR_NODES: NodeDef[] = [
     table: "motor_status",
     logTable: "motor_status_logs",
     column: "node2_open",
-    label: "Bathroom1",
+    label: "Over-Head Tank",
     group: "Nodes",
     everSeenColumn: "node2_ever_seen",
   },
@@ -65,7 +65,7 @@ const MOTOR_NODES: NodeDef[] = [
     table: "motor_status",
     logTable: "motor_status_logs",
     column: "node3_open",
-    label: "Washing area",
+    label: "Washing Area",
     group: "Nodes",
     everSeenColumn: "node3_ever_seen",
   },
@@ -73,7 +73,7 @@ const MOTOR_NODES: NodeDef[] = [
     table: "motor_status",
     logTable: "motor_status_logs",
     column: "node4_open",
-    label: "Bathroom2",
+    label: "Canteen-Tank",
     group: "Nodes",
     everSeenColumn: "node4_ever_seen",
   },
@@ -98,7 +98,7 @@ const TANK_NODES: NodeDef[] = [
     table: "tank_pump_status",
     logTable: "tank_pump_status_log",
     column: "node1",
-    label: "Node 1 (Solenoid Tank)",
+    label: "RO-Tank",
     group: "Tank Pump Status",
   },
   {
@@ -113,6 +113,18 @@ const TANK_NODES: NodeDef[] = [
 export const ALL_NODES = [...MOTOR_NODES, ...TANK_NODES];
 const REFRESH_MS = 5000;
 const STALE_MS = 2 * 60 * 1000;
+
+const LEFT_COLUMN_KEYS = ["pump_on", "node2_open", "node3_open","node4_open"] as const;
+const RIGHT_COLUMN_KEYS = ["pump2",  "node5", "node1_valve", "node1"] as const;
+const FEATURED_KEYS = new Set<string>([...LEFT_COLUMN_KEYS, ...RIGHT_COLUMN_KEYS]);
+
+export const CARD_BG_CLASS = "bg-secondary shadow-sm";
+
+function nodesForKeys(keys: readonly string[]) {
+  return keys
+    .map((key) => ALL_NODES.find((n) => n.column === key))
+    .filter((n): n is NodeDef => Boolean(n));
+}
 
 function isOn(v: string | number | null | undefined) {
   return v === 1 || v === "1";
@@ -153,12 +165,14 @@ function NodeCard({
   everSeenValue,
   logs,
   now,
+  compact = false,
 }: {
   def: NodeDef;
   currentValue: string | number | null;
   everSeenValue: string | number | null;
   logs: StatusLogRow[];
   now: number;
+  compact?: boolean;
 }) {
   const on = isOn(currentValue);
   const cycles = useMemo(
@@ -170,10 +184,18 @@ function NodeCard({
   return (
     <Link
       href={`/protected/history?node=${encodeURIComponent(def.column)}`}
-      className="relative text-left rounded-xl border border-border p-4 transition-all bg-card hover:shadow-md hover:-translate-y-0.5"
+      className={`relative text-left rounded-xl border border-border transition-all hover:shadow-md hover:-translate-y-0.5 ${CARD_BG_CLASS} ${
+        compact ? "p-3" : "p-4"
+      }`}
     >
-      <div className="flex items-start justify-start gap-2 mb-2">
-        <span className="text-[15px] font-medium text-foreground/90">
+      <div
+        className={`flex items-start justify-start gap-1.5 ${compact ? "mb-1.5" : "mb-2"}`}
+      >
+        <span
+          className={`font-medium text-foreground/90 ${
+            compact ? "text-sm leading-tight" : "text-[15px]"
+          }`}
+        >
           {def.label}
         </span>
         <span className="flex items-center gap-1.5">
@@ -186,19 +208,25 @@ function NodeCard({
       </div>
       <Badge
         variant={on ? "default" : "secondary"}
-        className={on ? "bg-green-600 hover:bg-green-600/90" : ""}
+        className={`${on ? "bg-green-600 hover:bg-green-600/90" : ""} ${
+          compact ? "text-xs px-2 py-0.5" : ""
+        }`}
       >
         {on ? "ON" : "OFF"}
       </Badge>
-      <div className="mt-3 text-xs text-muted-foreground space-y-0.5">
-        <div className="flex items-center justify-between gap-3 text-[15px] text-foreground/70">
-          <span>{on ? "Running for" : "Duration :"}</span>
+      <div
+        className={`text-muted-foreground space-y-0.5 ${
+          compact ? "mt-2 text-xs" : "mt-3 text-xs"
+        }`}
+      >
+        <div className={`text-foreground/70 ${compact ? "text-xs" : "text-[12px]"}`}>
+          <span>{on ? "Running for" : "Duration :"}</span>{" "}
           <span>{latest ? formatDuration(latest.durationMs) : "—"}</span>
         </div>
-        <br />
+        {!compact && <br />}
         {!on && latest && (
-          <div className="text-[15px] text-foreground/70">
-            Last OFF: {formatTime(latest.offAt)}
+          <div className={`text-foreground/70 ${compact ? "text-xs" : "text-[12px]"}`}>
+            OFF: {formatTime(latest.offAt)}
           </div>
         )}
       </div>
@@ -223,7 +251,7 @@ export function HistoryTable({
   );
 
   return (
-    <Card className="border-primary/40">
+    <Card className={`border-primary/40 ${CARD_BG_CLASS}`}>
       <CardHeader className="pb-3">
         <CardTitle className="text-base flex items-center gap-2">
           {def.label}
@@ -287,7 +315,7 @@ function SummaryCard({
   live: boolean;
 }) {
   return (
-    <Card>
+    <Card className={CARD_BG_CLASS}>
       <CardHeader className="pb-2">
         <CardTitle className="text-lg flex items-start justify-start gap-2">
           {title}
@@ -400,13 +428,31 @@ export default function DeviceDashboard() {
     );
   }
 
-  const groups = Array.from(new Set(ALL_NODES.map((n) => n.group))).sort((a, b) => {
+  const remainingGroups = Array.from(
+    new Set(
+      ALL_NODES.filter((n) => !FEATURED_KEYS.has(n.column)).map((n) => n.group),
+    ),
+  ).sort((a, b) => {
     if (a === "Manual Valves") return 1;
     if (b === "Manual Valves") return -1;
     return a.localeCompare(b);
   });
 
- return (
+  const renderNodeCard = (def: NodeDef, compact = false) => (
+    <NodeCard
+      key={def.column}
+      def={def}
+      currentValue={valueFor(def)}
+      everSeenValue={
+        def.everSeenColumn ? (motorRow?.[def.everSeenColumn] ?? null) : null
+      }
+      logs={logsFor(def)}
+      now={now}
+      compact={compact}
+    />
+  );
+
+  return (
     <div className="w-full max-w-7xl flex flex-col gap-8 px-4">
       <div className="flex items-center justify-between">
         <h2 className="font-medium text-xl">Live Device Status</h2>
@@ -416,14 +462,26 @@ export default function DeviceDashboard() {
       </div>
 
       <div className="flex gap-6 items-start">
-        {/* LEFT: cards */}
         <div className="flex-1 min-w-0 flex flex-col gap-8">
           <div className="grid grid-cols-2 gap-4">
             <SummaryCard title="Under-Tank Pump" row={motorRow} live={motorLive} />
             <SummaryCard title="Bore-Well Pump" row={tankRow} live={tankLive} />
           </div>
 
-          {groups.map((group) => (
+          <div className="grid grid-cols-2 gap-2 max-w-2xl">
+            <div className="flex flex-col gap-2">
+              {nodesForKeys(LEFT_COLUMN_KEYS).map((def) =>
+                renderNodeCard(def, true),
+              )}
+            </div>
+            <div className="flex flex-col gap-2">
+              {nodesForKeys(RIGHT_COLUMN_KEYS).map((def) =>
+                renderNodeCard(def, true),
+              )}
+            </div>
+          </div>
+
+          {remainingGroups.map((group) => (
             <div key={group} className="flex flex-col gap-3">
               <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
                 {group}
@@ -435,25 +493,13 @@ export default function DeviceDashboard() {
                     : "grid grid-cols-2 sm:grid-cols-4 gap-4"
                 }
               >
-                {ALL_NODES.filter((n) => n.group === group).map((def) => (
-                  <NodeCard
-                    key={def.column}
-                    def={def}
-                    currentValue={valueFor(def)}
-                    everSeenValue={
-                      def.everSeenColumn
-                        ? (motorRow?.[def.everSeenColumn] ?? null)
-                        : null
-                    }
-                    logs={logsFor(def)}
-                    now={now}
-                  />
-                ))}
+                {ALL_NODES.filter(
+                  (n) => n.group === group && !FEATURED_KEYS.has(n.column),
+                ).map((def) => renderNodeCard(def))}
               </div>
             </div>
           ))}
         </div>
-
       </div>
     </div>
   );
